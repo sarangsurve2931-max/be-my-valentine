@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Be My Valentine 💖</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  font-family: 'Comic Sans MS', 'Arial', sans-serif;
+  background: linear-gradient(135deg, #ffd6e8, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Floating hearts */
+.heart {
+  position: absolute;
+  bottom: -20px;
+  color: #ff5fa2;
+  animation: floatUp linear infinite;
+  opacity: 0.7;
+  pointer-events: none;
+  font-weight: bold;
+}
+
+@keyframes floatUp {
+  from { transform: translateY(0) scale(1); opacity: 0.8; }
+  to { transform: translateY(-110vh) scale(1.5); opacity: 0; }
+}
+
+/* Explosion hearts */
+.explosion-heart {
+  position: absolute;
+  font-size: 24px;
+  pointer-events: none;
+  animation: explode 1.2s ease-out forwards;
+  font-weight: bold;
+}
+
+@keyframes explode {
+  to {
+    transform: translate(var(--x), var(--y)) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Sparkle background */
+.sparkles {
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+    radial-gradient(2px 2px at 70% 40%, #fff, transparent),
+    radial-gradient(2px 2px at 40% 80%, #fff, transparent),
+    radial-gradient(2px 2px at 90% 60%, #fff, transparent),
+    radial-gradient(2px 2px at 10% 70%, #fff, transparent);
+  background-size: 200px 200px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s ease;
+  animation: sparkleMove 10s linear infinite;
+  z-index: 1;
+}
+
+.sparkles.active { opacity: 0.6; }
+
+@keyframes sparkleMove {
+  from { background-position: 0 0; }
+  to { background-position: 200px 200px; }
+}
+
+/* Screen shake */
+@keyframes screenShake {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 0); }
+  40% { transform: translate(6px, 0); }
+  60% { transform: translate(-6px, 0); }
+  80% { transform: translate(6px, 0); }
+  100% { transform: translate(0, 0); }
+}
+
+.shake {
+  animation: screenShake 0.4s;
+}
+
+/* Card */
+.card {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  text-align: center;
+  max-width: 420px;
+  position: relative;
+  z-index: 2;
+}
+
+h1 {
+  color: #ff5fa2;
+  margin-bottom: 30px;
+}
+
+.buttons {
+  position: relative;
+  height: 90px;
+}
+
+button {
+  padding: 15px 30px;
+  font-size: 18px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+}
+
+#yesBtn { background: #ff5fa2; color: white; }
+#noBtn { background: #ddd; color: #555; position: absolute; right: 0; }
+
+/* No message bubble */
+.no-message {
+  position: absolute;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff5fa2;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 25px;
+  font-size: 22px;
+  font-weight: bold;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  white-space: nowrap;
+}
+
+.no-message.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-10px) scale(1.1);
+}
+
+/* Result */
+.result {
+  display: none;
+  margin-top: 20px;
+}
+
+.result img {
+  max-width: 65%;
+  border-radius: 15px;
+  margin-top: 15px;
+}
+
+.love-text {
+  margin-top: 15px;
+  color: #ff5fa2;
+  font-size: 18px;
+  line-height: 1.4;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sparkles" id="sparkles"></div>
+
+<div class="card">
+  <h1 id="question">
+    As I already know the answer but still…<br>
+    Ninuuuu, will you be my Valentine? ❤️
+  </h1>
+
+  <div class="buttons">
+    <button id="yesBtn">Yes 💖</button>
+    <button id="noBtn">No 💔</button>
+    <div class="no-message" id="noMsg"></div>
+  </div>
+
+  <div class="result" id="result">
+    
+    <div class="love-text">
+      Ninuuuu, you've made me the happiest person in the world 💗<br>
+      Can't wait to celebrate this special day with you ✨<br>
+      I love youuu so much 💖
+    </div>
+    <img src="x.jpg.jpg">
+  </div>
+</div>
+
+<audio id="song" src="https://sufficient-magenta-cmhzwn2gjx.edgeone.app/october.mp3"></audio>
+
+<script>
+const noBtn = document.getElementById("noBtn");
+const yesBtn = document.getElementById("yesBtn");
+const noMsg = document.getElementById("noMsg");
+const result = document.getElementById("result");
+const sparkles = document.getElementById("sparkles");
+const question = document.getElementById("question");
+const song = document.getElementById("song");
+
+const noMessages = [
+  "shu tu mane prem nathi krti 🙄",
+  "mare dil sathi ramta nathi 😭",
+  "aee gadhedi ?? 😤",
+  "paso koshish kr 😌",
+  "aree baby khotu click kryu 😁"
+];
+
+let msgIndex = 0;
+let vibrationLevel = 1;
+
+/* No button behavior */
+function moveNoButton() {
+
+  // Vibration (mobile)
+  if (navigator.vibrate) {
+    navigator.vibrate(Math.min(vibrationLevel * 120, 600));
+    vibrationLevel++;
+  }
+
+  // Screen shake (iPad)
+  document.body.classList.add("shake");
+  setTimeout(() => document.body.classList.remove("shake"), 400);
+
+  // Move button
+  noBtn.style.transform =
+    `translate(${Math.random()*200-100}px, ${Math.random()*100-50}px)`;
+
+  // Message
+  noMsg.textContent = noMessages[msgIndex];
+  msgIndex = (msgIndex + 1) % noMessages.length;
+  noMsg.classList.add("show");
+
+  clearTimeout(noMsg.hideTimeout);
+  noMsg.hideTimeout = setTimeout(() => {
+    noMsg.classList.remove("show");
+  }, 3000);
+}
+
+noBtn.addEventListener("mouseenter", moveNoButton);
+noBtn.addEventListener("touchstart", moveNoButton);
+
+/* YES click */
+yesBtn.addEventListener("click", () => {
+  explode(yesBtn);
+  sparkles.classList.add("active");
+  song.play();
+
+  question.style.display = "none";
+  yesBtn.style.display = "none";
+  noBtn.style.display = "none";
+  result.style.display = "block";
+});
+
+/* Floating hearts */
+function createHeart() {
+  const h = document.createElement("div");
+  h.className = "heart";
+  const items = ["❤️","💖","💗","💘","Ninuuuu"];
+  h.innerHTML = items[Math.floor(Math.random()*items.length)];
+  h.style.left = Math.random()*100 + "vw";
+  h.style.fontSize = Math.random()*20 + 15 + "px";
+  h.style.animationDuration = Math.random()*5 + 5 + "s";
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),10000);
+}
+setInterval(createHeart, 400);
+
+/* Explosion */
+function explode(btn) {
+  const r = btn.getBoundingClientRect();
+  const x = r.left + r.width/2;
+  const y = r.top + r.height/2;
+  const items = ["❤️","💖","💗","💘","Ninuuuu"];
+
+  for(let i=0;i<30;i++){
+    const e = document.createElement("div");
+    e.className = "explosion-heart";
+    e.innerHTML = items[Math.floor(Math.random()*items.length)];
+    e.style.left = x+"px";
+    e.style.top = y+"px";
+    e.style.setProperty("--x",(Math.random()-0.5)*600+"px");
+    e.style.setProperty("--y",(Math.random()-0.5)*600+"px");
+    document.body.appendChild(e);
+    setTimeout(()=>e.remove(),1200);
+  }
+}
+</script>
+
+</body>
+</html>
